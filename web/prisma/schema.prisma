@@ -1,0 +1,71 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  phone     String   @unique
+  name      String?
+  /// BUYER | PRODUCER | ADMIN
+  role      String?
+  city      String?
+  province  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  listings       Listing[]
+  ordersAsBuyer  Order[]   @relation("BuyerOrders")
+  ordersAsSeller Order[]   @relation("SellerOrders")
+}
+
+model OtpCode {
+  id        String   @id @default(cuid())
+  phone     String
+  code      String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([phone])
+}
+
+model Listing {
+  id          String   @id @default(cuid())
+  title       String
+  productType String
+  quantity    Float
+  unit        String
+  priceUsd    Float
+  city        String
+  description String?
+  imageUrl    String?
+  active      Boolean  @default(true)
+  sellerId    String
+  seller      User     @relation(fields: [sellerId], references: [id])
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  orders Order[]
+}
+
+model Order {
+  id            String   @id @default(cuid())
+  listingId     String
+  listing       Listing  @relation(fields: [listingId], references: [id])
+  buyerId       String
+  buyer         User     @relation("BuyerOrders", fields: [buyerId], references: [id])
+  sellerId      String
+  seller        User     @relation("SellerOrders", fields: [sellerId], references: [id])
+  quantity      Float
+  totalUsd      Float
+  /// DRAFT | PENDING_PAYMENT | PAID | PREPARING | DELIVERED | CONFIRMED | DISPUTE | REFUNDED | CLOSED
+  status        String   @default("PENDING_PAYMENT")
+  commissionUsd Float?
+  paymentRef    String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
